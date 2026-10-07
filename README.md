@@ -1,59 +1,71 @@
-# 🖼️ Image Classification with CNN
+# 🖼️ Image Classification CNN
 
-> *"A model that can tell a square from a circle is the same model that can tell a dog from a cat — just with more layers and data."*
+> *"MNIST is called the Hello World of deep learning — but the hello world is where you learn to debug."*
 
-My first real deep learning project. It trains a Convolutional Neural Network (CNN) in PyTorch to classify synthetic images of shapes (circle, square, triangle). I deliberately used a self-contained dataset so you can run the whole thing offline without downloading gigabytes.
+My first real deep learning project: a convolutional neural network in PyTorch that classifies **70,000 real handwritten digits** from the MNIST dataset. Nothing synthetic, nothing toy — this is the actual benchmark every CNN tutorial starts with, and it's harder than it looks.
 
 ## What this project does
 
-- Generates a small dataset of synthetic shape images on the fly (no download needed).
-- Builds a simple CNN with convolutional + pooling + dense layers.
-- Trains it in PyTorch with a real training loop.
-- Tracks train/val accuracy and loss, and saves the best model.
-- Evaluates on held-out images and visualises some predictions.
+- Downloads the real MNIST dataset (60,000 train + 10,000 test handwritten digits).
+- Normalises pixel values and builds `DataLoader`s with an 80/10 train/val split.
+- Defines a CNN with three convolution blocks, batch norm, max pooling, and dropout.
+- Trains for up to 5 epochs with Adam and a step LR schedule, checkpointing the best model.
+- Evaluates on the official 10,000-image test split.
+- Renders a grid of predictions, green for correct and red for wrong.
 
-## Why a synthetic dataset?
+## The dataset
 
-Real image datasets (CIFAR, ImageNet) are huge and slow to download. Synthetic shapes let you learn the *entire* CNN pipeline — architecture, training loop, evaluation — in minutes on any machine, CPU included. The skills transfer directly to real datasets.
+[MNIST](http://yann.lecun.com/exdb/mnist/) — 70,000 greyscale 28×28 images of handwritten digits 0–9, from US Census clerks and high school students.
+
+| Split | Images |
+|---|---|
+| Train (54,000 used) | Handwritten digits |
+| Validation (6,000) | Held out from train for checkpointing |
+| Test (10,000) | Official test split |
 
 ## How to run it
 
 ```bash
 pip install -r requirements.txt
 
-# Train the CNN
-python train_cnn.py
-
-# Evaluate and visualise predictions
-python evaluate.py
+python -m src.train_cnn   # trains, saves best checkpoint to saved/mnist_cnn.pt
+python -m src.evaluate    # scores the test split, saves plots/predictions.png
 ```
+
+Runs in a few minutes on CPU. A GPU is used automatically if one is available.
 
 ## Project structure
 
 ```
 image-classification-cnn/
 ├── src/
-│   ├── dataset.py          # synthetic shape dataset
-│   ├── model.py            # CNN definition
-│   ├── train_cnn.py        # training loop
-│   └── evaluate.py         # evaluation + visualisation
-├── saved/
-│   └── cnn_shapes.pt       # best model checkpoint
+│   ├── dataset.py     # MNIST loader via torchvision
+│   ├── model.py       # DigitCNN definition
+│   ├── train_cnn.py   # training loop with checkpointing
+│   └── evaluate.py    # test scoring + prediction grid
+├── data/              # MNIST cache
+├── saved/             # best checkpoint
+├── tests/
 ├── requirements.txt
 └── README.md
 ```
 
 ## What I learned
 
-- How convolutions actually "see" local patterns in images.
-- The anatomy of a training loop: forward, loss, backward, step.
-- Why pooling shrinks the image while keeping important features.
-- How to interpret loss curves — and why val loss bouncing around is normal.
+- That batch normalisation stabilises training more than I expected it to.
+- Why you always need a validation split separate from test — otherwise you're selecting on your own exam.
+- How much a LR schedule matters: without it the last epochs overfit fast.
+- That 99%+ on MNIST is achievable, and that this is precisely why MNIST is now considered *too easy* — real work needs CIFAR or beyond.
 
 ## Results
 
-The CNN reaches **~99% accuracy** on the shape test set within a few epochs — shapes are easy. The real win is understanding *how* it learns, which carries over to harder problems like CIFAR or real photos.
+| Split | Accuracy |
+|---|---|
+| Validation | 0.9942 |
+| **Test (10,000 images)** | **0.9938** (9,938 / 10,000) |
+
+Training took ~5 minutes on CPU across 5 epochs. The prediction grid in `plots/predictions.png` shows where the model actually struggles — mostly ambiguous handwriting rather than obvious errors.
 
 ---
 
-*Built with Python, PyTorch, torchvision. Made for learning, by a student, for students.*
+*Built with Python, PyTorch, torchvision, matplotlib. Real image data, honestly measured.*
